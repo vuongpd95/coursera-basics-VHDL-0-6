@@ -1,0 +1,124 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // Put your code here:
+    Not(in = instruction[15], out = aInst);
+    Or(a = instruction[5], b = aInst, out = loadRegA);
+    Mux16(sel = aInst, a = ALUoutput, b = instruction, out = inA);
+    ARegister(in = inA, load = loadRegA, out = outA,
+                                        out[0] = addressM[0],
+                                        out[1] = addressM[1],
+                                        out[2] = addressM[2],
+                                        out[3] = addressM[3],
+                                        out[4] = addressM[4],
+                                        out[5] = addressM[5],
+                                        out[6] = addressM[6],
+                                        out[7] = addressM[7],
+                                        out[8] = addressM[8],
+                                        out[9] = addressM[9],
+                                        out[10] = addressM[10],
+                                        out[11] = addressM[11],
+                                        out[12] = addressM[12],
+                                        out[13] = addressM[13],
+                                        out[14] = addressM[14]);
+    Mux16(a = outA, b = inM, sel = instruction[12], out = inALU);
+    ALU(x = outD, y = inALU, zx = instruction[11],
+                            nx = instruction[10],
+                            zy = instruction[9],
+                            ny = instruction[8],
+                            f = instruction[7],
+                            no = instruction[6],
+                            zr = zrALU,
+                            ng = ngALU, out = outM, out = ALUoutput);
+    And(a = instruction[4], b = instruction[15], out = loadD);
+    DRegister(in = ALUoutput, load = loadD, out = outD);
+
+    Not(in = zrALU, out = notzr);
+    Not(in = ngALU, out = notng);
+    Not(in = instruction[2], out = notj1);
+    Not(in = instruction[1], out = notj2);
+    Not(in = instruction[0], out = notj3);
+
+    And(a = notzr, b = notng, out = nzrxnng);
+    And(a = notzr, b = ngALU, out = nzrxng);
+
+
+    And(a = notj1, b = instruction[0], out = nj1xj3);
+    And(a = instruction[2], b = instruction[0], out = j1xj3);
+
+    And(a = zrALU, b = instruction[1], out = in0);
+    And(a = nzrxnng, b = nj1xj3, out = in1);
+    And(a = nzrxng, b = instruction[2], out = in2);
+    And(a = notzr, b = j1xj3, out = in3);
+    And(a = instruction[1], b = j1xj3, out = in4);
+
+    Or8Way(in[0] = in0,
+            in[1] = in1,
+            in[2] = in2,
+            in[3] = in3,
+            in[4] = in4,
+            in[5] = false,
+            in[6] = false,
+            in[7] = false, out = out0);
+            
+    And(a = out0, b = instruction[15], out = loadPC);
+    PC(in = outA, reset = reset, load = loadPC, inc = true, out[0] = pc[0],
+                                                            out[1] = pc[1],
+                                                            out[2] = pc[2],
+                                                            out[3] = pc[3],
+                                                            out[4] = pc[4],
+                                                            out[5] = pc[5],
+                                                            out[6] = pc[6],
+                                                            out[7] = pc[7],
+                                                            out[8] = pc[8],
+                                                            out[9] = pc[9],
+                                                            out[10] = pc[10],
+                                                            out[11] = pc[11],
+                                                            out[12] = pc[12],
+                                                            out[13] = pc[13],
+                                                            out[14] = pc[14],
+                                                            out[15] = nouse);
+    Not(in = instruction[4], out = notd2);
+    And(a = notd2, b = instruction[3], out = notd2d3);
+    And(a = instruction[4], b = instruction[3], out = d2d3);
+    Or(a = notd2d3, b = d2d3, out = or1);
+    And(a = or1, b = instruction[15], out = writeM);
+}

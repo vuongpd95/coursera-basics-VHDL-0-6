@@ -1,0 +1,63 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/03/a/RAM64.hdl
+
+/**
+ * Memory of 64 registers, each 16 bit-wide. Out holds the value
+ * stored at the memory location specified by address. If load==1, then 
+ * the in value is loaded into the memory location specified by address 
+ * (the loaded value will be emitted to out from the next time step onward).
+ */
+
+CHIP RAM64 {
+    IN in[16], load, address[6];
+    OUT out[16];
+
+    PARTS:
+    // Put your code here:
+    DMux8Way(in = load, sel[0] = address[3],
+    					sel[1] = address[4],
+    					sel[2] = address[5], a = lRAM80,
+    											b = lRAM81,
+    											c = lRAM82,
+    											d = lRAM83,
+    											e = lRAM84,
+    											f = lRAM85,
+    											g = lRAM86,
+    											h = lRAM87);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out0, load = lRAM80);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out1, load = lRAM81);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out2, load = lRAM82);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out3, load = lRAM83);    				    				
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out4, load = lRAM84);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out5, load = lRAM85);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out6, load = lRAM86);
+    RAM8(in = in, address[0] = address[0],
+    				address[1] = address[1],
+    				address[2] = address[2], out = out7, load = lRAM87);
+    Mux8Way16(a = out0,
+    			b = out1,
+    			c = out2,
+    			d = out3,
+    			e = out4,
+    			f = out5,
+    			g = out6,
+    			h = out7, sel[0] = address[3],
+    						sel[1] = address[4],
+    						sel[2] = address[5], out = out);
+}
